@@ -23,7 +23,7 @@ Bagian ini menampilkan implementasi antarmuka yang telah dibangun dengan pendeka
 ### 2. Inventory & Profile Management
 | **Stock Management (Inventory)** | **User Profile** |
 |:---:|:---:|
-| <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/56c55ee1-3e1a-4b68-9520-4d8c56d130a0" /> | <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/17813eb4-de12-4adc-b783-94958029ad8b" /> |
+| <img width="300" alt="image" src="https://github.com/user-attachments/assets/56c55ee1-3e1a-4b68-9520-4d8c56d130a0" /> | <img width="300" alt="image" src="https://github.com/user-attachments/assets/17813eb4-de12-4adc-b783-94958029ad8b" /> |
 | *Fitur filter status (Kritis, Menipis) dan indikator warna visual untuk memudahkan monitoring stok.* | *Navigasi pengaturan toko dan akun yang terstruktur dengan hierarki informasi yang jelas.* |
 
 > **Catatan:** Ganti path `assets/screenshots/...` dengan lokasi file gambar yang Anda miliki atau link upload GitHub yang baru.
