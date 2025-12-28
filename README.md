@@ -80,7 +80,3 @@ Aplikasi ini dibangun menggunakan arsitektur **MVVM (Model-View-ViewModel)** unt
 
 ---
 
-<p align="center">
-  <b>Kelompok 11 - Mobile Programming</b><br>
-  Dibuat dengan ❤️ oleh [Nama Anda] sebagai UI/UX Architect
-</p>
