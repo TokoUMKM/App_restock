@@ -1,4 +1,4 @@
-<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/52ab3c33-7156-46e0-9c10-6b389da1cde1" /># 📦 Restock App - Inventory Management System
+# 📦 Restock App - Inventory Management System
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-02569B?logo=flutter)
 ![Dart](https://img.shields.io/badge/Dart-3.0%2B-0175C2?logo=dart)
@@ -17,7 +17,7 @@ Bagian ini menampilkan implementasi antarmuka yang telah dibangun dengan pendeka
 
 | **Login Screen** | **Dashboard / Home** |
 |:---:|:---:|
-| <img src="blob:https://web.whatsapp.com/284b17f4-0c37-49b9-8602-4686b18e17a9"> | <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/a0b528a0-37cb-49a4-b23c-c1ae4ec4d9c9" /> |
+| <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/a0b528a0-37cb-49a4-b23c-c1ae4ec4d9c9" /> | <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/52ab3c33-7156-46e0-9c10-6b389da1cde1" /> |
 | *Desain minimalis dengan input field yang jelas dan tombol thumb-friendly.* | *Grid layout untuk menampilkan banyak produk dengan kartu yang informatif.* |
 
 > **Catatan:** Gambar di atas adalah representasi visual dari kode yang telah diimplementasikan.
