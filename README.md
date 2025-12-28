@@ -16,7 +16,7 @@ Bagian ini menampilkan implementasi antarmuka yang telah dibangun dengan pendeka
 
 | **Login Screen** | **Dashboard / Home** |
 |:---:|:---:|
-| <img src="assets/screenshots/login_preview.png" width="250" alt="Tampilan Login"> | <img src="assets/screenshots/home_preview.png" width="250" alt="Tampilan Dashboard"> |
+| <img src="blob:https://web.whatsapp.com/284b17f4-0c37-49b9-8602-4686b18e17a9"> | <img src="blob:https://web.whatsapp.com/9e2480f6-03f2-424b-aa25-8c7b42731800"> |
 | *Desain minimalis dengan input field yang jelas dan tombol thumb-friendly.* | *Grid layout untuk menampilkan banyak produk dengan kartu yang informatif.* |
 
 > **Catatan:** Gambar di atas adalah representasi visual dari kode yang telah diimplementasikan.
