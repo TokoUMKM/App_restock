@@ -9,18 +9,24 @@
 Proyek ini berfokus pada **User Experience (UX)** yang efisien dan **User Interface (UI)** yang bersih (Clean Design), memastikan pengguna dapat mengelola inventaris dengan cepat dan tanpa kebingungan.
 
 ---
-![Uploading image.png…]()
 
 ## 🎨 UI/UX Design Showcase
 
 Bagian ini menampilkan implementasi antarmuka yang telah dibangun dengan pendekatan *User-Centered Design*.
 
+### 1. Authentication & Dashboard
 | **Login Screen** | **Dashboard / Home** |
 |:---:|:---:|
-| <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/a0b528a0-37cb-49a4-b23c-c1ae4ec4d9c9" /> | <img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/52ab3c33-7156-46e0-9c10-6b389da1cde1" /> |
+| <img src="https://github.com/user-attachments/assets/a0b528a0-37cb-49a4-b23c-c1ae4ec4d9c9" width="300" alt="Login Screen" /> | <img src="https://github.com/user-attachments/assets/52ab3c33-7156-46e0-9c10-6b389da1cde1" width="300" alt="Home Dashboard" /> |
 | *Desain minimalis dengan input field yang jelas dan tombol thumb-friendly.* | *Grid layout untuk menampilkan banyak produk dengan kartu yang informatif.* |
 
-> **Catatan:** Gambar di atas adalah representasi visual dari kode yang telah diimplementasikan.
+### 2. Inventory & Profile Management
+| **Stock Management (Inventory)** | **User Profile** |
+|:---:|:---:|
+| <img src="assets/screenshots/inventory_screen.png" width="300" alt="Manajemen Stok" /> | <img src="assets/screenshots/profile_screen.png" width="300" alt="Profil User" /> |
+| *Fitur filter status (Kritis, Menipis) dan indikator warna visual untuk memudahkan monitoring stok.* | *Navigasi pengaturan toko dan akun yang terstruktur dengan hierarki informasi yang jelas.* |
+
+> **Catatan:** Ganti path `assets/screenshots/...` dengan lokasi file gambar yang Anda miliki atau link upload GitHub yang baru.
 
 ---
 
@@ -32,7 +38,10 @@ Sebagai fondasi UI/UX, aplikasi ini menggunakan **Modular Architecture** untuk m
 Kami menggunakan `Teal` sebagai warna primer untuk memberikan kesan profesional, tenang, dan terpercaya.
 * **Primary Color:** `Colors.teal`
 * **Background:** `Colors.grey[50]` (Untuk mengurangi kelelahan mata / *eye strain*)
-* **Shape:** Rounded Corners (12px - 16px) untuk kesan modern dan ramah.
+* **Status Colors:**
+    * 🔴 **Danger:** Stok Kritis (Restock!)
+    * 🟡 **Warning:** Stok Menipis
+    * 🟢 **Safe:** Stok Aman
 
 ### 2. Folder Structure
 Struktur direktori disusun berdasarkan fungsi komponen UI:
@@ -45,4 +54,6 @@ lib/
 │   └── product_card.dart  # Widget kartu untuk menampilkan item barang
 └── screens/            # Halaman utama aplikasi
     ├── login_screen.dart  # Halaman otentikasi pengguna
-    └── home_screen.dart   # Dashboard utama (Grid View)
+    ├── home_screen.dart   # Dashboard utama (Grid View)
+    ├── inventory_screen.dart # Halaman manajemen stok dengan filter
+    └── profile_screen.dart   # Halaman pengaturan akun
