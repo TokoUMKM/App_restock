@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 class CameraService {
   CameraController? _controller;
 
-  // 1. Handling Permission (Android/iOS)
+  // 1. Handling Permission
   Future<bool> requestPermissions() async {
     Map<Permission, PermissionStatus> statuses = await [
       Permission.camera,
@@ -24,7 +24,7 @@ class CameraService {
 
     _controller = CameraController(
       cameras.first,
-      ResolutionPreset.medium, // Medium cukup untuk OCR Gemini agar hemat bandwidth
+      ResolutionPreset.medium,
       enableAudio: false,
     );
 
@@ -32,15 +32,14 @@ class CameraService {
     return _controller;
   }
 
-  // 3. Ambil & Compress Image max 1MB
+  // 3. Ambil & Compress Image
   Future<File?> captureAndCompress() async {
     if (_controller == null || !_controller!.value.isInitialized) return null;
 
-    // Ambil gambar original
+    // gambar original
     final XFile rawImage = await _controller!.takePicture();
     final File imageFile = File(rawImage.path);
 
-    // Baca image untuk diproses
     img.Image? decodedImage = img.decodeImage(await imageFile.readAsBytes());
     if (decodedImage == null) return null;
 

@@ -1,7 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class WhatsAppLauncher {
-  // Sesuai requirement: Open WA dengan template chat [cite: 14, 30]
   static Future<void> sendOrder(String phone, String message) async {
     final String cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final Uri url = Uri.parse(
