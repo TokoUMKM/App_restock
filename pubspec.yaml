@@ -13,23 +13,40 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # --- UI & FONTS ---
   cupertino_icons: ^1.0.6
-
-  # State Management
-  flutter_riverpod: ^2.6.1
-
-  # Backend & Database
-  supabase_flutter: ^2.12.0
-
-  # UI Toolkit & Fonts
   google_fonts: ^6.3.0
   phosphor_flutter: ^2.1.0
   fl_chart: ^0.71.0
 
-  # Utilities
+  # --- STATE MANAGEMENT ---
+  flutter_riverpod: ^2.6.1
+
+  # --- BACKEND & NETWORK ---
+  supabase_flutter: ^2.12.0
+  http: ^1.2.1  
+
+  # --- UTILITIES ---
   intl: ^0.20.2
+  url_launcher: ^6.3.2 
+  showcaseview: ^3.0.0
+  shared_preferences: ^2.2.2
+  flutter_local_notifications: ^17.0.0
+
+  # --- HARDWARE & FILES ---
+  camera: ^0.11.0
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.3
+  path: ^1.9.0
+  pdf: ^3.10.8            # Untuk membuat dokumen PDF
+  printing: ^5.13.2       # Untuk print/share PDF
+  image: ^4.2.0 
+  flutter_dotenv: ^6.0.0
+  http_parser: ^4.1.2
+  image_cropper: ^5.0.0
+  print_bluetooth_thermal: ^1.1.1 # <-- GANTI INI (Koneksi)
+  esc_pos_utils_plus: ^2.0.4
 
 dev_dependencies:
   flutter_test:
@@ -52,6 +69,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
-import 'package:image/image.dart' as img;
+import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart'; 
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
 
 class CameraService {
   CameraController? _controller;
@@ -12,6 +12,7 @@ class CameraService {
     Map<Permission, PermissionStatus> statuses = await [
       Permission.camera,
       Permission.storage,
+      // Permission.photos, // Uncomment jika perlu untuk iOS 14+
     ].request();
 
     return statuses[Permission.camera]!.isGranted;
@@ -24,7 +25,7 @@ class CameraService {
 
     _controller = CameraController(
       cameras.first,
-      ResolutionPreset.medium,
+      ResolutionPreset.high, // Gunakan High agar hasil crop tidak buram
       enableAudio: false,
     );
 
@@ -32,33 +33,42 @@ class CameraService {
     return _controller;
   }
 
-  // 3. Ambil & Compress Image
-  Future<File?> captureAndCompress() async {
+  // 3. Ambil Foto (Raw)
+  // Kita tidak compress di sini, karena akan dicrop dulu
+  Future<File?> capturePhoto() async {
     if (_controller == null || !_controller!.value.isInitialized) return null;
 
-    // gambar original
     final XFile rawImage = await _controller!.takePicture();
-    final File imageFile = File(rawImage.path);
-
-    img.Image? decodedImage = img.decodeImage(await imageFile.readAsBytes());
-    if (decodedImage == null) return null;
-
-    // Kompresi kualitas ke 80%
-    List<int> compressedBytes = img.encodeJpg(decodedImage, quality: 80);
-
-    // (Resize)
-    if (compressedBytes.length > 1000000) {
-      decodedImage = img.copyResize(decodedImage, width: 1024);
-      compressedBytes = img.encodeJpg(decodedImage, quality: 70);
-    }
-
-    // Simpan ke temporary directory
-    final tempDir = await getTemporaryDirectory();
-    final compressedFile = File('${tempDir.path}/receipt_processed.jpg');
-    return await compressedFile.writeAsBytes(compressedBytes);
+    return File(rawImage.path);
   }
 
-  void dispose() {
-    _controller?.dispose();
+ // For image_cropper version 5.0.0
+  Future<File?> cropImage(File imageFile) async {
+    CroppedFile? croppedFile = await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      aspectRatioPresets: [
+        CropAspectRatioPreset.original,
+        CropAspectRatioPreset.square,
+        CropAspectRatioPreset.ratio3x2,
+        CropAspectRatioPreset.ratio4x3,
+        CropAspectRatioPreset.ratio16x9
+      ],
+      uiSettings: [
+        AndroidUiSettings(
+            toolbarTitle: 'Potong Struk',
+            toolbarColor: const Color(0xFF2962FF),
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false),
+        IOSUiSettings(
+          title: 'Potong Struk',
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      return File(croppedFile.path);
+    }
+    return null;
   }
 }

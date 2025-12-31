@@ -1,3 +1,21 @@
+buildscript {
+    // [FIX UTAMA] Kita paksa pakai Kotlin 1.9.24 agar kuat jalan di JDK 21
+    ext.kotlin_version = '1.9.24'
+    
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        // Android Gradle Plugin versi stabil
+        classpath 'com.android.tools.build:gradle:8.2.1'
+        
+        // Plugin Kotlin yang versinya kita tentukan di atas
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 allprojects {
     repositories {
         google()

@@ -1,0 +1,8 @@
+{
+    "yaml.customTags": [
+        "!script"
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "cmake.sourceDirectory": "D:/App_restock/windows",
+    "java.compile.nullAnalysis.mode": "automatic"
+}
