@@ -1,4 +1,4 @@
-package com.example.project_restock
+package com.restockai.app
 
 import io.flutter.embedding.android.FlutterActivity
 

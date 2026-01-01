@@ -79,11 +79,11 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 color: Colors.orange.shade50,
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(Icons.info_outline, color: Colors.orange),
-                    const SizedBox(width: 10),
-                    const Expanded(
+                    Icon(Icons.info_outline, color: Colors.orange),
+                    SizedBox(width: 10),
+                    Expanded(
                       child: Text(
                         "Pastikan Printer sudah dinyalakan dan dipairing lewat menu Bluetooth HP.",
                         style: TextStyle(fontSize: 12),

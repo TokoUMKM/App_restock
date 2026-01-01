@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // IMPORT SERVICE & MODEL
 import '../services/camera_service.dart';
-import '../services/ai_services.dart'; // Pastikan nama file sesuai (ai_service.dart)
+import '../services/ai_services.dart'; 
 import '../services/supabase_services.dart';
 import '../models/product.dart';
-import 'preview_screen.dart'; // Pastikan file ini sudah dibuat
+import 'preview_screen.dart'; 
 
 // --- PROVIDERS ---
 final cameraServiceProvider = Provider((ref) => CameraService());
@@ -42,7 +42,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
     super.dispose();
   }
 
-  // Handle siklus hidup aplikasi (Pause/Resume kamera)
+  // Handle siklus hidup aplikasi 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final CameraController? cameraController = _controller;
@@ -79,7 +79,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
     if (_controller == null || !_controller!.value.isInitialized || _isAnalyzing) return;
 
     try {
-      // 1. Matikan flash capture agar tidak overexposed
+      // 1. Mati flash capture jika nyala
       if (_isFlashOn) {
         await _controller!.setFlashMode(FlashMode.off);
       }
@@ -95,8 +95,6 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
         context,
         MaterialPageRoute(builder: (_) => PreviewScreen(imagePath: rawFile.path)),
       );
-
-      // Jika user membatalkan
       if (proceed != true || !mounted) {
         if (_isFlashOn) await _controller!.setFlashMode(FlashMode.torch);
         return;
@@ -149,13 +147,8 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Tampilan Kamera Full Screen
           SizedBox.expand(child: CameraPreview(_controller!)),
-
-          // Overlay Scanner
           _buildScannerOverlay(),
-
-          // Kontrol Atas (Back & Flash)
           Positioned(
             top: 50, left: 20, right: 20,
             child: Row(
@@ -258,7 +251,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
             const SizedBox(height: 25),
             const Text("Sedang Menganalisa Struk...", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Text("Gemini AI sedang mengekstrak data barang", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13)),
+            Text("AI sedang mengekstrak data barang", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13)),
           ],
         ),
       ),
@@ -266,9 +259,8 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
   }
 }
 
-// =============================================================================
-// SHEET REVIEW HASIL SCAN (FIXED: ANTI OVERFLOW UI)
-// =============================================================================
+// SHEET REVIEW HASIL SCAN
+
 class ReceiptReviewSheet extends ConsumerStatefulWidget {
   final ReceiptData data;
   final File imageFile;
@@ -400,8 +392,8 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
       }
 
       if (!mounted) return;
-      Navigator.pop(context); // Tutup Sheet
-      Navigator.pop(context); // Kembali ke Dashboard
+      Navigator.pop(context); 
+      Navigator.pop(context); 
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -417,7 +409,6 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
     }
   }
 
-  // UI YANG DIPERBAIKI (ANTI OVERFLOW)
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -425,9 +416,7 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      // FIX 1: Padding atas saja, jangan padding bottom di sini
       padding: const EdgeInsets.only(top: 16, left: 20, right: 20),
-      // FIX 2: Tinggi maksimal 85% layar
       height: MediaQuery.of(context).size.height * 0.85,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,13 +424,10 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
           // Handle Bar
           Center(child: Container(width: 45, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
           const SizedBox(height: 24),
-          
           const Text("Review Hasil Deteksi", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text("Ketuk untuk edit, geser untuk hapus", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
           const Divider(height: 32),
-
-          // FIX 3: Gunakan Expanded ListView agar area list bisa di-scroll
           Expanded(
             child: ListView(
               physics: const BouncingScrollPhysics(),
@@ -456,16 +442,12 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
                     child: _buildItemCard(index, item),
                   );
                 }),
-                // Ruang ekstra agar list terbawah tidak tertutup tombol
                 const SizedBox(height: 80),
               ],
             ),
           ),
-
-          // FIX 4: Tombol melayang di bawah & naik otomatis saat keyboard muncul
           Padding(
             padding: EdgeInsets.only(
-              // Inset bottom adalah tinggi keyboard
               bottom: MediaQuery.of(context).viewInsets.bottom + 20, 
               top: 10
             ),

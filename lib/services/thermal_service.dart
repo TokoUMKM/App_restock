@@ -19,6 +19,7 @@ class ThermalPrinterService {
     required String shopAddress,
     required String shopPhone,
     required String cashierName,
+    required String paymentMethod, // <--- 1. PARAMETER BARU
   }) async {
     bool isConnected = await PrintBluetoothThermal.connectionStatus;
     if (!isConnected) {
@@ -86,6 +87,16 @@ class ThermalPrinterService {
           text: currency.format(total),
           width: 6,
           styles: const PosStyles(align: PosAlign.right, height: PosTextSize.size2, bold: true)),
+    ]);
+
+    // --- 2. TAMPILAN PAYMENT METHOD (BARU) ---
+    bytes += generator.feed(1);
+    bytes += generator.row([
+      PosColumn(text: 'Metode Bayar:', width: 6, styles: const PosStyles(align: PosAlign.left)),
+      PosColumn(
+          text: paymentMethod.toUpperCase(),
+          width: 6,
+          styles: const PosStyles(align: PosAlign.right, bold: true)),
     ]);
 
     bytes += generator.feed(1);

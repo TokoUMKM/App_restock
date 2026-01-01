@@ -5,29 +5,50 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_core/firebase_core.dart'; 
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // --- IMPORTS SCREEN ---
 import 'screens/dashboard_screen.dart';
-import 'screens/login_screen.dart';
 import 'screens/product_list_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/spalsh_screen.dart';
+// ignore: unused_import
+import 'screens/login_screen.dart'; 
 import 'screens/camera_screen.dart'; 
- import 'screens/cashier_screen.dart'; // Buka komen ini jika file sudah ada
+import 'screens/cashier_screen.dart'; 
+import 'screens/welcome_screen.dart'; 
+import 'services/notification_service.dart'; 
+
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("Menangani pesan background: ${message.messageId}");
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load Env & Supabase
+  // 2. Load Env & Supabase
   await dotenv.load(fileName: ".env");
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? '',
     anonKey: dotenv.env['SUPABASE_KEY'] ?? '',
   );
 
+  // 3. Inisialisasi Firebase
+  await Firebase.initializeApp();
+  
+  //4. Daftar Background Handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // 5. Init Notifikasi Lokal (Service)
+  await NotificationService.init();
+
+  // 6. Setup Locale
   await initializeDateFormatting('id_ID', null);
 
-  // Setup Status Bar (Transparan, Icon Gelap)
+  // 7. Setup Status Bar
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
@@ -41,8 +62,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- ROUTING LOGIC ---
+    final session = Supabase.instance.client.auth.currentSession;
+    final isLoggedIn = session != null;
+
     return MaterialApp(
-      title: 'Smart UMKM Restock',
+      title: 'TokoUMKM',
       debugShowCheckedModeBanner: false,
       locale: const Locale('id', 'ID'),
       
@@ -57,7 +82,7 @@ class MyApp extends StatelessWidget {
         ),
         textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent, // Agar menyatu dengan background
+          backgroundColor: Colors.transparent, 
           elevation: 0,
           centerTitle: true,
           iconTheme: IconThemeData(color: Colors.black87),
@@ -65,13 +90,12 @@ class MyApp extends StatelessWidget {
               color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
-
-      home: const SplashScreen(),
+      home: isLoggedIn ? const MainScaffold() : const WelcomeScreen(),
     );
   }
 }
 
-// --- MAIN SCAFFOLD (MODIFIED: SCAN TENGAH & MENONJOL) ---
+// --- MAIN SCAFFOLD ---
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -81,17 +105,14 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
-
-  // Daftar Halaman (Scan tidak masuk sini karena dia aksi langsung/overlay)
   final List<Widget> _pages = [
-    const DashboardScreen(),     // Index 0: Home
-    const ProductListScreen(),   // Index 1: Stok
-    // Index 2 & 3 bergeser karena Scan ada di tombol tengah terpisah
-    const CashierScreen(),       // Index 2: Kasir (Pindah ke kanan)
-    const ProfileScreen(),       // Index 3: Profile
+    const DashboardScreen(),     
+    const ProductListScreen(),   
+    const CashierScreen(),       
+    const ProfileScreen(),       
   ];
 
-  // Aksi Tombol Scan (Membuka Kamera Langsung)
+  // Aksi Tombol Scan 
   void _onScanPressed() {
     Navigator.push(
       context, 
@@ -108,7 +129,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // PENTING: Agar background menyatu dengan lekukan tombol
+      extendBody: true, 
       backgroundColor: const Color(0xFFF4F7FC),
       
       body: IndexedStack(
@@ -116,15 +137,15 @@ class _MainScaffoldState extends State<MainScaffold> {
         children: _pages,
       ),
 
-      // --- TOMBOL SCAN (TENGAH, BESAR, KONTRAS) ---
+      // --- SCAN---
       floatingActionButton: SizedBox(
-        width: 70, // Ukuran lebih besar dari standar
+        width: 70, 
         height: 70,
         child: FloatingActionButton(
           onPressed: _onScanPressed,
           elevation: 4,
-          backgroundColor: const Color(0xFFFF6D00), // WARNA KONTRAS (Oranye)
-          shape: const CircleBorder(), // Bulat sempurna
+          backgroundColor: const Color(0xFFFF6D00), 
+          shape: const CircleBorder(), 
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -135,13 +156,12 @@ class _MainScaffoldState extends State<MainScaffold> {
           ),
         ),
       ),
-      // Posisi 'Docked' membuat tombol menempel di tengah BottomBar
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // --- NAVIGATION BAR ---
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(), // Membuat lekukan (notch)
-        notchMargin: 10.0, // Jarak lekukan dari tombol
+        shape: const CircularNotchedRectangle(), 
+        notchMargin: 10.0, 
         color: Colors.white,
         surfaceTintColor: Colors.white,
         elevation: 10,
@@ -150,14 +170,9 @@ class _MainScaffoldState extends State<MainScaffold> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // KIRI (Home & Stok)
             _buildNavItem(icon: Icons.dashboard_rounded, label: "Home", index: 0),
             _buildNavItem(icon: Icons.inventory_2_rounded, label: "Stok", index: 1),
-
-            // SPASI KOSONG DI TENGAH (Untuk tombol Scan)
             const SizedBox(width: 40),
-
-            // KANAN (Kasir & Profil)
             _buildNavItem(icon: Icons.point_of_sale_rounded, label: "Kasir", index: 2),
             _buildNavItem(icon: Icons.person_rounded, label: "Profil", index: 3),
           ],
@@ -166,7 +181,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
-  // Helper Widget untuk Item Menu agar kodenya rapi
+  // Helper Widget Item Menu 
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     final bool isSelected = _selectedIndex == index;
     final Color color = isSelected ? const Color(0xFF2962FF) : Colors.grey.shade400;

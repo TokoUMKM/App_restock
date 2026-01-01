@@ -26,7 +26,7 @@ class SupplierListNotifier extends StateNotifier<List<Supplier>> {
       await _service.addSupplier(name, phone);
       await loadSuppliers(); // Reload dari DB untuk dapat ID baru
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -43,7 +43,7 @@ class SupplierListNotifier extends StateNotifier<List<Supplier>> {
             s
       ];
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -55,7 +55,7 @@ class SupplierListNotifier extends StateNotifier<List<Supplier>> {
       state = state.where((s) => s.id != id).toList();
     } catch (e) {
       await loadSuppliers(); // Fallback jika gagal
-      throw e;
+      rethrow;
     }
   }
 }

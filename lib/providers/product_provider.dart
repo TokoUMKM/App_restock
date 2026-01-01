@@ -15,7 +15,7 @@ class ProductNotifier extends StateNotifier<List<Product>> {
       final products = await _service.getProducts();
       state = products;
     } catch (e) {
-      // Jangan hanya di-print, lempar ke logging system jika ada
+      // ignore: avoid_print
       print("Error loading products: $e");
     }
   }

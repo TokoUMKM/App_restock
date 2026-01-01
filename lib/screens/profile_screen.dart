@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart'; 
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // [PENTING] Import dotenv
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../screens/login_screen.dart';
 import '../providers/product_provider.dart';
@@ -19,13 +20,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // Data Profil
   String _fullName = "";
   String _shopName = "";
-  String _email = "";
-  String _phone = "";   
+  String _phone = "";    
   String _address = ""; 
   
   // State UI
   bool _isLoading = false;
-  bool _notifEnabled = true; // State untuk toggle notifikasi
+  bool _notifEnabled = true; 
 
   @override
   void initState() {
@@ -33,17 +33,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _loadProfile();
   }
 
-  // --- 1. LOAD DATA PROFIL LENGKAP ---
+  // --- 1. LOAD DATA PROFIL ---
   void _loadProfile() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final meta = user.userMetadata ?? {};
       setState(() {
-        _email = user.email ?? "";
         _fullName = meta['full_name'] ?? "User Toko";
         _shopName = meta['shop_name'] ?? "Toko Saya";
-        _phone = meta['shop_phone'] ?? "";       // Load No HP Toko
-        _address = meta['shop_address'] ?? "";   // Load Alamat Toko
+        _phone = meta['shop_phone'] ?? "";       
+        _address = meta['shop_address'] ?? "";   
       });
     }
   }
@@ -57,15 +56,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         content: Text(message),
         backgroundColor: isError ? Colors.red : const Color(0xFF2962FF),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.only(bottom: 90, left: 20, right: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20), // Agar tidak ketutup BottomNav
       ),
     );
   }
 
-  // --- 2. LOGIC UPDATE PROFIL (LENGKAP) ---
+  // --- 2. EDIT PROFIL ---
   void _showEditProfileDialog() {
-    // Siapkan controller dengan text yang sudah ada
     final nameCtrl = TextEditingController(text: _fullName);
     final shopCtrl = TextEditingController(text: _shopName);
     final phoneCtrl = TextEditingController(text: _phone);
@@ -83,25 +81,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Edit Informasi Toko", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("Edit Profil Toko", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
               
-              // Input Nama
               _buildTextField(nameCtrl, "Nama Pemilik", Icons.person_outline),
-              const SizedBox(height: 12),
-              
-              // Input Toko
+              const SizedBox(height: 16),
               _buildTextField(shopCtrl, "Nama Toko", Icons.store_outlined),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              _buildTextField(phoneCtrl, "No. Telepon", Icons.phone_outlined, inputType: TextInputType.phone),
+              const SizedBox(height: 16),
+              _buildTextField(addressCtrl, "Alamat", Icons.location_on_outlined, maxLines: 2, isLast: true),
               
-              // [BARU] Input Telepon
-              _buildTextField(phoneCtrl, "No. Telepon Toko", Icons.phone_outlined, inputType: TextInputType.phone),
-              const SizedBox(height: 12),
-
-              // [BARU] Input Alamat
-              _buildTextField(addressCtrl, "Alamat Lengkap", Icons.location_on_outlined, maxLines: 2),
-              
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
               
               SizedBox(
                 width: double.infinity,
@@ -114,20 +105,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   onPressed: () async {
                     Navigator.pop(ctx);
-                    setState(() => _isLoading = true); // Tampilkan loading global (opsional) atau snackbar
+                    setState(() => _isLoading = true);
                     
                     try {
-                      // Update Metadata ke Supabase
                       await Supabase.instance.client.auth.updateUser(
                         UserAttributes(data: {
                           'full_name': nameCtrl.text.trim(), 
                           'shop_name': shopCtrl.text.trim(),
-                          'shop_phone': phoneCtrl.text.trim(),   // Simpan HP
-                          'shop_address': addressCtrl.text.trim() // Simpan Alamat
+                          'shop_phone': phoneCtrl.text.trim(),   
+                          'shop_address': addressCtrl.text.trim() 
                         }),
                       );
-                      
-                      _loadProfile(); // Refresh UI Lokal
+                      _loadProfile(); 
                       _showSnack("Profil berhasil diperbarui!");
                     } catch (e) {
                       _showSnack("Gagal update: $e", isError: true);
@@ -135,7 +124,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       setState(() => _isLoading = false);
                     }
                   },
-                  child: const Text("Simpan Perubahan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text("SIMPAN PERUBAHAN", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               )
             ],
@@ -145,34 +134,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // Widget Helper TextField agar kode rapi
-  Widget _buildTextField(TextEditingController ctrl, String label, IconData icon, {TextInputType inputType = TextInputType.text, int maxLines = 1}) {
+  Widget _buildTextField(TextEditingController ctrl, String label, IconData icon, 
+      {TextInputType inputType = TextInputType.text, int maxLines = 1, bool isLast = false}) {
     return TextField(
       controller: ctrl,
       keyboardType: inputType,
       maxLines: maxLines,
+      textInputAction: isLast ? TextInputAction.done : TextInputAction.next,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 22, color: Colors.grey),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        isDense: true,
+        prefixIcon: Icon(icon, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2962FF))),
       ),
     );
   }
 
-  // --- 3. FITUR HUBUNGI ADMIN (WA) ---
+  // --- 3. KONTAK ADMIN ---
   Future<void> _contactAdmin() async {
-    // Ambil nomor dari .env agar aman
     final adminPhone = dotenv.env['ADMIN_WA'] ?? ""; 
-    
     if (adminPhone.isEmpty) {
       _showSnack("Nomor Admin belum dikonfigurasi.", isError: true);
       return;
     }
-
     final uri = Uri.parse("https://wa.me/$adminPhone?text=Halo%20Admin%20RestockAI,%20saya%20butuh%20bantuan.");
-    
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -184,81 +172,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  // --- 4. LOGOUT DENGAN LOADING (LOGGING UX) ---
+  // --- 4. LOGOUT ---
   void _confirmLogout() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.all(24),
-        title: const Column(
-          children: [
-            Icon(Icons.logout_rounded, color: Color(0xFF2962FF), size: 48),
-            SizedBox(height: 16),
-            Text("Keluar Aplikasi?", style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Text(
-          "Sesi Anda akan berakhir. Pastikan data sudah tersimpan.",
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey),
-        ),
-        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        title: const Text("Keluar Aplikasi?"),
+        content: const Text("Pastikan semua pekerjaan Anda sudah tersimpan."),
         actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              side: BorderSide(color: Colors.grey.shade300)
-            ),
-            child: const Text("Batal", style: TextStyle(color: Colors.black54)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
             onPressed: () async {
-              Navigator.pop(ctx); // Tutup Dialog Konfirmasi
-
-              // [UX UPGRADE] Tampilkan Loading Indicator (Logging out...)
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (_) => const Center(
-                  child: Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text("Sedang keluar...")
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              );
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true); // Loading state
               
-              // Simulasi delay sedikit agar user 'merasakan' proses logout
-              await Future.delayed(const Duration(milliseconds: 800));
-
-              // Proses Logout Asli
+              await Future.delayed(const Duration(milliseconds: 500));
               await Supabase.instance.client.auth.signOut();
               
-              // Reset State Riverpod
               ref.invalidate(productListProvider);
               ref.invalidate(cartProvider);
               
               if (mounted) {
-                // Tutup Loading Dialog
-                Navigator.pop(context); 
-                
-                // Pindah ke Login Screen
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -273,24 +209,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // --- 5. HAPUS AKUN (SAFE MODE) ---
+  // --- 5. HAPUS AKUN (CRITICAL FIX) ---
   void _confirmDeleteAccount() {
     final confirmCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("HAPUS AKUN PERMANEN", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text("HAPUS AKUN", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("Semua data stok dan riwayat akan hilang. Ini tidak dapat dibatalkan.", style: TextStyle(fontSize: 13)),
+            const Text("PERINGATAN: Data stok dan riwayat akan dihapus permanen dari server.\n\nKetik 'HAPUS' untuk melanjutkan.", style: TextStyle(fontSize: 13, color: Colors.black87)),
             const SizedBox(height: 16),
             TextField(
               controller: confirmCtrl,
               decoration: const InputDecoration(
-                labelText: "Ketik 'HAPUS' untuk konfirmasi",
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(), 
+                hintText: "Ketik HAPUS",
                 isDense: true,
               ),
             )
@@ -302,20 +238,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () async {
               if (confirmCtrl.text == "HAPUS") {
                 Navigator.pop(ctx);
+                setState(() => _isLoading = true); // Tampilkan loading fullscreen
+
                 try {
-                   // Fallback: SignOut dan beri pesan
+                   // [FIX: WAJIB PANGGIL RPC UNTUK HAPUS DATA DI DB]
+                   await Supabase.instance.client.rpc('delete_user_account');
+
+                   // Logout setelah data bersih
                    await Supabase.instance.client.auth.signOut();
-                   ref.invalidate(productListProvider);
                    
+                   // Reset Riverpod
+                   ref.invalidate(productListProvider);
+                   ref.invalidate(cartProvider);
+
                    if (mounted) {
                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
-                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Permintaan hapus akun diterima.")));
+                     _showSnack("Akun berhasil dihapus permanen.");
                    }
                 } catch (e) {
-                   _showSnack("Gagal memproses permintaan.", isError: true);
+                   setState(() => _isLoading = false);
+                   _showSnack("Gagal menghapus akun: $e", isError: true);
                 }
               } else {
-                _showSnack("Kata konfirmasi salah.", isError: true);
+                _showSnack("Konfirmasi salah. Ketik 'HAPUS'.", isError: true);
               }
             },
             child: const Text("HAPUS SEKARANG", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -327,131 +272,151 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    if (_isLoading) return const Scaffold(backgroundColor: Colors.white, body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
-      appBar: AppBar(
-        title: const Text("Profil Saya", style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100), 
+        physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
-            // --- KARTU PROFIL ---
+            // --- HEADER MODERN ---
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))]
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+              decoration: const BoxDecoration(
+                color: Color(0xFF2962FF), 
+                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: const Color(0xFF2962FF).withOpacity(0.1),
-                    child: Text(
-                      _fullName.isNotEmpty ? _fullName[0].toUpperCase() : "U",
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2962FF)),
-                    ),
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundColor: const Color(0xFFE3F2FD),
+                          child: Text(
+                            _fullName.isNotEmpty ? _fullName[0].toUpperCase() : "A",
+                            style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF2962FF)),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0, right: 0,
+                        child: InkWell(
+                          onTap: _showEditProfileDialog,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: Colors.orange, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                            child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_fullName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(_shopName, style: const TextStyle(color: Color(0xFF2962FF), fontWeight: FontWeight.w500)),
-                        // Tampilkan Telepon & Alamat jika ada
-                        if (_phone.isNotEmpty) 
-                          Padding(padding: const EdgeInsets.only(top: 2), child: Text(_phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
-                        if (_address.isNotEmpty)
-                          Padding(padding: const EdgeInsets.only(top: 2), child: Text(_address, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
-                      ],
-                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _fullName,
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  IconButton(
-                    onPressed: _showEditProfileDialog, 
-                    icon: const Icon(Icons.edit_square, color: Color(0xFF2962FF)),
-                    tooltip: "Edit Profil",
-                  )
+                  Text(
+                    _shopName,
+                    style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_phone.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                      child: Text(_phone, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                    )
                 ],
               ),
             ),
-            
-            const SizedBox(height: 24),
-            
-            // --- MENU PENGATURAN ---
-            _buildSectionHeader("Pengaturan"),
-            
-            _buildMenuTile(Icons.language, "Bahasa Aplikasi", "Indonesia (ID)", () => _showSnack("Saat ini hanya Bahasa Indonesia.")),
-            
-            // Switch Notifikasi (Sekarang Interaktif)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-              child: SwitchListTile(
-                value: _notifEnabled,
-                onChanged: (val) {
-                  setState(() => _notifEnabled = val);
-                  _showSnack(val ? "Notifikasi Diaktifkan" : "Notifikasi Dinonaktifkan");
-                },
-                secondary: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.notifications_outlined, color: Colors.orange),
-                ),
-                title: const Text("Notifikasi Stok", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                activeColor: const Color(0xFF2962FF),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // --- MENU BANTUAN ---
-            _buildSectionHeader("Bantuan"),
-            _buildMenuTile(Icons.help_outline_rounded, "Pusat Bantuan", "FAQ & Panduan", () => _showSnack("Membuka halaman panduan...")),
-            
-            // Tombol Hubungi Admin (WA)
-            _buildMenuTile(Icons.support_agent_rounded, "Hubungi Admin", "WhatsApp Support", _contactAdmin),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // --- MENU AKUN (DANGER ZONE) ---
-            _buildSectionHeader("Akun"),
-            Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+            // --- MENU CONTENT ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.logout, color: Colors.orange),
+                  _buildSectionTitle("PENGATURAN"),
+                  Container(
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                      children: [
+                        _buildSwitchTile(
+                          icon: Icons.notifications_active_outlined, 
+                          title: "Notifikasi Stok", 
+                          value: _notifEnabled, 
+                          onChanged: (val) => setState(() => _notifEnabled = val)
+                        ),
+                        const Divider(height: 1, indent: 56),
+                        _buildMenuTile(
+                          icon: Icons.language, 
+                          title: "Bahasa", 
+                          subtitle: "Indonesia", 
+                          onTap: () {
+                             _showSnack("Fitur Multi-bahasa segera hadir.");
+                          }
+                        ),
+                      ],
                     ),
-                    title: const Text("Keluar Aplikasi", style: TextStyle(fontWeight: FontWeight.w600)),
-                    trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                    onTap: _confirmLogout,
                   ),
-                  const Divider(height: 1, indent: 60),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.delete_forever, color: Colors.red),
+
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("BANTUAN"),
+                  Container(
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                      children: [
+                        _buildMenuTile(
+                          icon: Icons.support_agent_rounded, 
+                          title: "Hubungi Admin", 
+                          subtitle: "WhatsApp Support", 
+                          onTap: _contactAdmin
+                        ),
+                        const Divider(height: 1, indent: 56),
+                        _buildMenuTile(
+                          icon: Icons.info_outline_rounded, 
+                          title: "Tentang Aplikasi", 
+                          subtitle: "Versi 1.0.0", 
+                          onTap: () {}
+                        ),
+                      ],
                     ),
-                    title: const Text("Hapus Akun", style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
-                    trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                    onTap: _confirmDeleteAccount,
                   ),
+
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("AKUN"),
+                  Container(
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                      children: [
+                        _buildMenuTile(
+                          icon: Icons.logout_rounded, 
+                          title: "Keluar Aplikasi", 
+                          onTap: _confirmLogout,
+                          isDestructive: false, 
+                          overrideColor: Colors.redAccent
+                        ),
+                        const Divider(height: 1, indent: 56),
+                        _buildMenuTile(
+                          icon: Icons.delete_forever_rounded, 
+                          title: "Hapus Akun", 
+                          onTap: _confirmDeleteAccount,
+                          isDestructive: true 
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 100), 
                 ],
               ),
             ),
@@ -461,31 +426,56 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  // --- WIDGET HELPERS ---
+  Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade600, fontSize: 13)),
-      ),
+      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      child: Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, color: const Color(0xFF2962FF), size: 22),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+  Widget _buildMenuTile({
+    required IconData icon, 
+    required String title, 
+    String? subtitle, 
+    required VoidCallback onTap, 
+    bool isDestructive = false,
+    Color? overrideColor,
+  }) {
+    final Color contentColor = overrideColor ?? (isDestructive ? Colors.red : Colors.grey.shade700);
+    
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+        child: Icon(icon, color: contentColor, size: 20),
+      ),
+      title: Text(title, style: TextStyle(
+        fontWeight: FontWeight.w600, 
+        fontSize: 14, 
+        color: isDestructive ? Colors.red : Colors.black87
+      )),
+      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)) : null,
+      trailing: const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required IconData icon, 
+    required String title, 
+    required bool value, 
+    required ValueChanged<bool> onChanged
+  }) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      activeColor: const Color(0xFF2962FF),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+      secondary: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.grey.shade700, size: 20),
       ),
     );
   }

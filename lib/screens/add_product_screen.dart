@@ -42,10 +42,10 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       return;
     }
 
-    // Optional: Paksa user pilih supplier
+    // Validasi Supplier (Opsional, tapi disarankan)
     if (_selectedSupplierId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pilih Supplier dulu agar bisa restock otomatis!")),
+        const SnackBar(content: Text("Mohon pilih Supplier terlebih dahulu.")),
       );
       return;
     }
@@ -87,145 +87,182 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. DENGARKAN DATA SUPPLIER (Langsung List<Supplier>)
+    // 1. DENGARKAN DATA SUPPLIER
     final suppliers = ref.watch(supplierListProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC), // Background Abu-Biru Modern
       appBar: AppBar(
-        title: const Text("Tambah Barang Baru"),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
+        title: const Text("Tambah Barang", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Informasi Dasar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 16),
-            
-            // SKU
-            TextField(
-              controller: _skuController,
-              decoration: const InputDecoration(
-                labelText: "Kode SKU / Barcode",
-                hintText: "Scan atau ketik manual",
-                prefixIcon: Icon(Icons.qr_code),
+            // --- KARTU 1: INFORMASI UTAMA ---
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Nama Produk
-            TextField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: "Nama Produk *",
-                prefixIcon: Icon(Icons.label_outline),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Harga
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: "Harga Jual (Rp) *",
-                prefixIcon: Icon(Icons.monetization_on_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // --- PILIH SUPPLIER (DROPDOWN FIX) ---
-            DropdownButtonFormField<String>(
-              value: _selectedSupplierId,
-              decoration: const InputDecoration(
-                labelText: "Supplier (Penyedia Barang) *",
-                prefixIcon: Icon(Icons.store),
-                border: OutlineInputBorder(),
-                helperText: "Penting untuk fitur auto-order WhatsApp",
-              ),
-              items: suppliers.map((supplier) {
-                return DropdownMenuItem(
-                  value: supplier.id,
-                  child: Text(
-                    supplier.name, 
-                    overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Informasi Dasar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 20),
+                  
+                  _buildModernTextField(
+                    controller: _skuController,
+                    label: "SKU / Barcode (Opsional)",
+                    icon: Icons.qr_code_2_rounded,
                   ),
-                );
-              }).toList(),
-              onChanged: suppliers.isEmpty 
-                  ? null 
-                  : (value) {
-                      setState(() {
-                        _selectedSupplierId = value;
-                      });
-                    },
-              hint: suppliers.isEmpty 
-                ? const Text("Belum ada data supplier...") 
-                : const Text("Pilih Supplier"),
+                  const SizedBox(height: 16),
+                  
+                  _buildModernTextField(
+                    controller: _nameController,
+                    label: "Nama Produk *",
+                    icon: Icons.label_outline_rounded,
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildModernTextField(
+                    controller: _priceController,
+                    label: "Harga Jual (Rp) *",
+                    icon: Icons.monetization_on_outlined,
+                    isNumber: true,
+                    isCurrency: true,
+                  ),
+                ],
+              ),
             ),
-            
-            const SizedBox(height: 32),
 
-            // --- STOK ---
-            const Text("Manajemen Stok", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _stockController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: "Stok Awal",
-                      prefixIcon: Icon(Icons.inventory_2_outlined),
-                      suffixText: "Unit",
+            // --- KARTU 2: STOK & SUPPLIER ---
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Stok & Supplier", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildModernTextField(
+                          controller: _stockController,
+                          label: "Stok Awal",
+                          icon: Icons.inventory_2_outlined,
+                          isNumber: true,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildModernTextField(
+                          controller: _minStockController,
+                          label: "Min. Stok",
+                          icon: Icons.warning_amber_rounded,
+                          isNumber: true,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // DROPDOWN MODERN (FIX OVERFLOW)
+                  DropdownButtonFormField<String>(
+                    value: _selectedSupplierId,
+                    isExpanded: true, // PENTING: Mencegah Overflow Text
+                    decoration: InputDecoration(
+                      labelText: "Supplier",
+                      prefixIcon: const Icon(Icons.store_mall_directory_outlined, color: Colors.grey),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
+                    items: suppliers.map((supplier) {
+                      return DropdownMenuItem(
+                        value: supplier.id,
+                        child: Text(
+                          supplier.name, 
+                          overflow: TextOverflow.ellipsis, // PENTING: Potong teks panjang
+                          maxLines: 1,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => _selectedSupplierId = value),
+                    hint: const Text("Pilih Supplier"),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _minStockController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: "Batas Minimum",
-                      prefixIcon: Icon(Icons.warning_amber_rounded),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+
+            const SizedBox(height: 30),
+
+            // --- TOMBOL SIMPAN ---
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveProduct,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2962FF),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 5,
+                  shadowColor: const Color(0xFF2962FF).withOpacity(0.4),
+                ),
+                child: _isLoading 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)) 
+                  : const Text("SIMPAN PRODUK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
-      
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: _isLoading ? null : _saveProduct,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2962FF),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-          child: _isLoading 
-              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) 
-              : const Text("SIMPAN PRODUK", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-        ),
+    );
+  }
+
+  // --- WIDGET HELPER TEXTFIELD (MODERN STYLE) ---
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isNumber = false,
+    bool isCurrency = false,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : [],
+      style: const TextStyle(fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey.shade600),
+        prefixIcon: Icon(icon, color: isCurrency ? const Color(0xFF2962FF) : Colors.grey.shade500),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2962FF), width: 1.5)),
       ),
     );
   }
