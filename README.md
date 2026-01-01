@@ -14,17 +14,23 @@
 
 Berikut adalah tampilan antarmuka aplikasi yang didesain dengan pendekatan *Clean & Modern UI*.
 
-### 1. Dashboard & Otentikasi
-| **Halaman Login** | **Smart Dashboard** |
-|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/a0b528a0-37cb-49a4-b23c-c1ae4ec4d9c9" width="300" alt="Login UI" /> | <img src="https://github.com/user-attachments/assets/52ab3c33-7156-46e0-9c10-6b389da1cde1" width="300" alt="Dashboard UI" /> |
-| **Login Aman:** Terintegrasi dengan Supabase Auth untuk keamanan maksimal. Desain simpel memudahkan akses cepat. | **Pusat Kontrol:** Ringkasan kesehatan toko, banner peringatan stok kritis, dan grafik penjualan mingguan. |
+### 1. Otentikasi & Welcome Screen
+| **Halaman Login** | **Welcome Screen** | **Halaman Register** |
+|:---:|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/a0b528a0-37cb-49a4-b23c-c1ae4ec4d9c9" width="250" alt="Login UI" /> | <img src="https://github.com/user-attachments/assets/81307006-958d-47bb-b318-e9a8a0a481a4" width="250" alt="Welcome UI" /> | <img src="https://github.com/user-attachments/assets/5bd5c892-1af9-48ba-bb66-1063ae0f46ba" width="250" alt="Register UI" /> |
+| **Login Aman**<br>Terintegrasi dengan Supabase Auth. | **Sapaan Hangat**<br>Onboarding yang ramah pengguna. | **Registrasi Cepat**<br>Pendaftaran akun toko baru. |
 
-### 2. Manajemen Stok & Profil
-| **Manajemen Stok** | **Profil Pengguna** |
-|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/56c55ee1-3e1a-4b68-9520-4d8c56d130a0" width="300" alt="Stock UI" /> | <img src="https://github.com/user-attachments/assets/17813eb4-de12-4adc-b783-94958029ad8b" width="300" alt="Profile UI" /> |
-| **Smart Inventory:** Indikator warna (Merah/Kuning/Hijau) untuk status stok dan prediksi kapan barang habis. | **Pengaturan:** Kelola data toko, kontak supplier, dan fitur keamanan akun (Hapus Akun Permanen). |
+### 2. Dashboard, Stok & Scan
+| **Dashboard Utama** | **Manajemen Stok** | **Review Scan** |
+|:---:|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/457ee706-8a75-46fb-81ad-eac19d6a286e" width="250" alt="Dashboard UI" /> | <img src="https://github.com/user-attachments/assets/51036528-4fe0-4cbc-aa5c-10cc6f777662" width="250" alt="Stock UI" /> | <img src="https://github.com/user-attachments/assets/afac9231-e332-44ea-abf5-6f574b47c1bc" width="250" alt="Scan UI" /> |
+| **Pusat Kontrol**<br>Ringkasan kesehatan toko & grafik. | **Indikator Stok**<br>Status warna (Merah/Kuning/Hijau). | **AI Scan**<br>Verifikasi hasil scan produk. |
+
+### 3. Laporan, Kasir & Supplier
+| **Laporan Keuangan** | **Kasir (POS)** | **Tambah Supplier** |
+|:---:|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/288047d8-02b4-4f47-a27d-be75e5cae078" width="250" alt="Report UI" /> | <img src="https://github.com/user-attachments/assets/a3344f39-026c-4c1f-b3cd-bea3a089a516" width="250" alt="Cashier UI" /> | <img src="https://github.com/user-attachments/assets/519bfc0f-fabd-43e9-9069-5df1da3f432a" width="250" alt="Supplier UI" /> |
+| **Analisa Bisnis**<br>Pantau omzet dan performa. | **Transaksi Cepat**<br>Mode kasir yang mudah digunakan. | **Database Supplier**<br>Simpan kontak pemasok. |
 
 ---
 
@@ -37,8 +43,8 @@ Berikut adalah tampilan antarmuka aplikasi yang didesain dengan pendekatan *Clea
 
 ### 📦 2. Manajemen Stok Cerdas
 * **Visual Indicators:**
-    * 🔴 **Habis:** Stok habis.
-    * 🟡 **Restock:** sangat sedikit (Perlu tindakan segera)
+    * 🔴 **Habis:** Stok 0 (Perlu tindakan segera).
+    * 🟡 **Restock:** Stok menipis (Warning).
     * 🟢 **Aman:** Stok melimpah.
 * **Prediksi Stok:** Algoritma sederhana yang menghitung estimasi hari sebelum barang habis (misal: *"Habis dalam 1.5 hari"*).
 
@@ -125,4 +131,10 @@ Kontribusi selalu diterima! Silakan buat *Pull Request* atau buka *Issue* jika m
 
 ---
 
-**Dibuat dengan ❤️ oleh [Muhammad Adam Sirojuddin Munawar, Muhammad Tibia Nugraha, Nisrina Aliya Tharifa, Raditya Raihan]**
+### 👥 Tim Pengembang
+
+Dibuat dengan ❤️ oleh:
+* **Muhammad Adam Sirojuddin Munawar**
+* **Muhammad Tibia Nugraha**
+* **Nisrina Aliya Tharifa**
+* **Raditya Raihan**
