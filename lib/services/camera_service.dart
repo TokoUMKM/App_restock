@@ -8,60 +8,88 @@ class CameraService {
   CameraController? _controller;
 
   // 1. Handling Permission
+  // HANYA minta Camera. Storage tidak perlu untuk cache di Android 13+
   Future<bool> requestPermissions() async {
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.camera,
-      Permission.storage,
-      // Permission.photos, // Uncomment jika perlu untuk iOS 14+
-    ].request();
-
-    return statuses[Permission.camera]!.isGranted;
+    var status = await Permission.camera.request();
+    return status.isGranted;
   }
 
-  // 2. Modul Kamera (Initialize)
+  // 2. Initialize Camera
   Future<CameraController?> initializeCamera() async {
     final cameras = await availableCameras();
     if (cameras.isEmpty) return null;
 
     _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.high, // Gunakan High agar hasil crop tidak buram
-      enableAudio: false,
+      cameras.first, // Kamera Belakang
+      ResolutionPreset.high, // Resolusi tinggi untuk OCR
+      enableAudio: false, // Hemat resource & izin mic
+      imageFormatGroup: Platform.isAndroid 
+          ? ImageFormatGroup.jpeg 
+          : ImageFormatGroup.bgra8888,
     );
 
-    await _controller!.initialize();
+    try {
+      await _controller!.initialize();
+      await _controller!.setFocusMode(FocusMode.auto);
+      await _controller!.setFlashMode(FlashMode.off); // Default Mati
+    } catch (e) {
+      debugPrint("Camera Init Error: $e");
+      return null;
+    }
+    
     return _controller;
   }
 
-  // 3. Ambil Foto (Raw)
-  // Kita tidak compress di sini, karena akan dicrop dulu
+  // 3. Kontrol Flash (Dipanggil dari UI)
+  Future<void> setFlashMode(FlashMode mode) async {
+    if (_controller != null && _controller!.value.isInitialized) {
+      try {
+        await _controller!.setFlashMode(mode);
+      } catch (e) {
+        debugPrint("Flash Error: $e");
+      }
+    }
+  }
+
+  // 4. Ambil Foto
   Future<File?> capturePhoto() async {
     if (_controller == null || !_controller!.value.isInitialized) return null;
 
-    final XFile rawImage = await _controller!.takePicture();
-    return File(rawImage.path);
+    try {
+      final XFile rawImage = await _controller!.takePicture();
+      return File(rawImage.path);
+    } catch (e) {
+      debugPrint("Capture Error: $e");
+      return null;
+    }
   }
 
- // For image_cropper version 5.0.0
+  // 5. Crop Image 
   Future<File?> cropImage(File imageFile) async {
     CroppedFile? croppedFile = await ImageCropper().cropImage(
       sourcePath: imageFile.path,
-      aspectRatioPresets: [
-        CropAspectRatioPreset.original,
-        CropAspectRatioPreset.square,
-        CropAspectRatioPreset.ratio3x2,
-        CropAspectRatioPreset.ratio4x3,
-        CropAspectRatioPreset.ratio16x9
-      ],
+      compressQuality: 85, // Optimasi ukuran file
+      compressFormat: ImageCompressFormat.jpg,
+
       uiSettings: [
         AndroidUiSettings(
             toolbarTitle: 'Potong Struk',
             toolbarColor: const Color(0xFF2962FF),
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false),
+            lockAspectRatio: false,
+            hideBottomControls: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9
+            ],
+        ),
         IOSUiSettings(
           title: 'Potong Struk',
+          doneButtonTitle: 'Selesai',
+          cancelButtonTitle: 'Batal',
         ),
       ],
     );
@@ -70,5 +98,10 @@ class CameraService {
       return File(croppedFile.path);
     }
     return null;
+  }
+
+  // 6. Dispose
+  void dispose() {
+    _controller?.dispose();
   }
 }

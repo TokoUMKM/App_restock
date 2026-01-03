@@ -1,17 +1,19 @@
-// Lokasi: lib/screens/register_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // 1. Import Supabase
-import '../main.dart'; // Import untuk navigasi ke MainScaffold
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class RegisterScreen extends StatefulWidget {
+import '../main.dart'; 
+import '../providers/cart_provider.dart';
+import '../providers/product_provider.dart';
+
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // Controller input
   final _nameController = TextEditingController();
   final _shopNameController = TextEditingController();
@@ -19,7 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   
   bool _obscurePassword = true;
-  bool _isLoading = false; // 2. State untuk Loading
+  bool _isLoading = false; 
 
   // --- LOGIKA DAFTAR (SIGN UP) ---
   Future<void> _signUp() async {
@@ -41,7 +43,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final response = await Supabase.instance.client.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        // C. Simpan Nama & Toko sebagai Metadata (Data tambahan user)
+        // C. Simpan Nama & Toko sebagai Metadata
+        // Ini agar kita bisa ambil nama toko di Dashboard/Struk nanti
         data: {
           'full_name': _nameController.text.trim(),
           'shop_name': _shopNameController.text.trim(),
@@ -50,24 +53,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       // D. Cek Keberhasilan
       if (mounted) {
-        // Jika setting Supabase "Confirm Email" nyala, user belum login (session null).
-        // Jika mati, user langsung login (session ada).
+        // KASUS 1: Auto Confirm ON (User langsung dapat session)
         if (response.session != null) {
-           // Auto Login Berhasil
-           Navigator.pushAndRemoveUntil(
+          
+          // Reset Data Riverpod (Penting!)
+          ref.invalidate(productListProvider);
+          ref.invalidate(cartProvider);
+          
+          // Masuk Dashboard
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const MainScaffold()),
             (route) => false,
           );
-        } else {
-          // Harus konfirmasi email dulu
+        } 
+        // KASUS 2: Auto Confirm OFF (Harus klik link email)
+        else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Registrasi berhasil! Silakan cek email untuk konfirmasi."),
+              content: Text("Registrasi berhasil! Silakan cek email untuk verifikasi."),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 4),
             ),
           );
-          Navigator.pop(context); // Kembali ke login
+          Navigator.pop(context); 
         }
       }
 
@@ -75,13 +84,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Handle Error (Email sudah dipakai, password lemah, dll)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(error.message), 
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Terjadi kesalahan koneksi"), backgroundColor: Colors.red),
+          SnackBar(content: Text("Terjadi kesalahan: $error")),
         );
       }
     } finally {
@@ -107,8 +120,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
         title: const Text("Buat Akun Baru",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -130,14 +146,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Form Nama Lengkap
               _buildInputLabel("Nama Lengkap"),
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: "Budi Santoso",
-                  prefixIcon: Icon(Icons.person_outline),
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2962FF))),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
                 ),
               ),
               const SizedBox(height: 20),
@@ -147,9 +167,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _shopNameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: "Contoh: Toko Makmur Jaya",
-                  prefixIcon: Icon(Icons.storefront_outlined),
+                  prefixIcon: const Icon(Icons.storefront_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2962FF))),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
                 ),
               ),
               const SizedBox(height: 20),
@@ -159,9 +184,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: "budi@toko.com",
-                  prefixIcon: Icon(Icons.email_outlined),
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2962FF))),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
                 ),
               ),
               const SizedBox(height: 20),
@@ -187,21 +217,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       });
                     },
                   ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2962FF))),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
                 ),
               ),
 
               const SizedBox(height: 32),
 
               // Tombol Daftar dengan Loading State
-              ElevatedButton(
-                onPressed: _isLoading ? null : _signUp, // Matikan jika loading
-                child: _isLoading 
-                  ? const SizedBox(
-                      height: 20, 
-                      width: 20, 
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                    )
-                  : const Text("Daftar Sekarang"),
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _signUp, // Matikan jika loading
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2962FF),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading 
+                    ? const SizedBox(
+                        height: 20, 
+                        width: 20, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      )
+                    : const Text("Daftar Sekarang", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
               ),
 
               const SizedBox(height: 24),

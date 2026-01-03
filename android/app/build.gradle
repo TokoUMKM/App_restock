@@ -1,7 +1,8 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android" 
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
 }
 
 def localProperties = new Properties()
@@ -23,32 +24,38 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace = "com.restockai.app" 
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.restockai.app"
+    
+    // [WAJIB] Targetkan Android 15 
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        // [SETTING JDK 21]
+        // [WAJIB] Java 17 untuk AGP 8.0+ dan Flutter terbaru
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // Wajib true untuk library notifikasi & printer
+        
+        // Diperlukan untuk support fitur Java baru di Android lama
         coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
-        // [SETTING JDK 21]
+        // [WAJIB] Sinkronkan dengan Java 17
         jvmTarget = '17'
     }
 
     defaultConfig {
         applicationId = "com.restockai.app"
-        minSdk = 23 
-        targetSdk = flutter.targetSdkVersion
+        minSdkVersion = flutter.minSdkVersion 
+        
+        // [WAJIB] Targetkan Android 15 (
+        targetSdk = 36
+        
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
 
-signingConfigs {
+    signingConfigs {
         release {
             def keystoreProperties = new Properties()
             def propertiesFile = rootProject.file('key.properties')
@@ -65,7 +72,9 @@ signingConfigs {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled true
+            // Hati-hati: minifyEnabled true bisa membuat error jika rules Proguard kurang.
+            // Jika nanti rilis crash, ubah ini jadi false sementara.
+            minifyEnabled true 
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -76,9 +85,7 @@ flutter {
     source = "../.."
 }
 
-// [WAJIB ADA] Dependency untuk support fitur Java terbaru di Android lama
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    // Update ke versi terbaru agar kompatibel dengan Java 17
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.2'
 }
-
-apply plugin: 'com.google.gms.google-services'

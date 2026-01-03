@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,49 +13,60 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/product_list_screen.dart';
 import 'screens/profile_screen.dart';
-// ignore: unused_import
-import 'screens/login_screen.dart'; 
 import 'screens/camera_screen.dart'; 
 import 'screens/cashier_screen.dart'; 
 import 'screens/welcome_screen.dart'; 
 import 'services/notification_service.dart'; 
 
-
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print("Menangani pesan background: ${message.messageId}");
+  debugPrint("Handling background message: ${message.messageId}");
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Load Env & Supabase
-  await dotenv.load(fileName: ".env");
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_KEY'] ?? '',
-  );
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (e) {
+      throw Exception("File .env tidak ditemukan. Pastikan konfigurasi benar.");
+    }
 
-  // 3. Inisialisasi Firebase
-  await Firebase.initializeApp();
-  
-  //4. Daftar Background Handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    final sbUrl = dotenv.env['SUPABASE_URL'];
+    final sbKey = dotenv.env['SUPABASE_KEY'];
+    if (sbUrl == null || sbKey == null) {
+      throw Exception("SUPABASE_URL atau SUPABASE_KEY kosong di .env");
+    }
 
-  // 5. Init Notifikasi Lokal (Service)
-  await NotificationService.init();
+    await Supabase.initialize(url: sbUrl, anonKey: sbKey);
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    
+    await NotificationService.init().catchError((e) {
+      debugPrint("Gagal init notifikasi: $e");
+    });
 
-  // 6. Setup Locale
-  await initializeDateFormatting('id_ID', null);
+    await initializeDateFormatting('id_ID', null);
 
-  // 7. Setup Status Bar
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
+    // [PENTING] Izinkan Landscape juga
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
 
-  runApp(const ProviderScope(child: MyApp()));
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
+
+    runApp(const ProviderScope(child: MyApp()));
+  }, (error, stack) {
+    debugPrint("FATAL ERROR: $error");
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -62,18 +74,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- ROUTING LOGIC ---
-    final session = Supabase.instance.client.auth.currentSession;
-    final isLoggedIn = session != null;
-
     return MaterialApp(
       title: 'TokoUMKM',
       debugShowCheckedModeBanner: false,
       locale: const Locale('id', 'ID'),
-      
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF4F7FC), // Warna background global
+        scaffoldBackgroundColor: const Color(0xFFF4F7FC),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2962FF),
           brightness: Brightness.light,
@@ -90,12 +97,26 @@ class MyApp extends StatelessWidget {
               color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
-      home: isLoggedIn ? const MainScaffold() : const WelcomeScreen(),
+      home: StreamBuilder<AuthState>(
+        stream: Supabase.instance.client.auth.onAuthStateChange,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+
+          final session = Supabase.instance.client.auth.currentSession;
+          
+          if (session != null) {
+            return const MainScaffold();
+          } else {
+            return const WelcomeScreen();
+          }
+        },
+      ),
     );
   }
 }
 
-// --- MAIN SCAFFOLD ---
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -105,6 +126,7 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
+  
   final List<Widget> _pages = [
     const DashboardScreen(),     
     const ProductListScreen(),   
@@ -112,7 +134,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     const ProfileScreen(),       
   ];
 
-  // Aksi Tombol Scan 
   void _onScanPressed() {
     Navigator.push(
       context, 
@@ -129,18 +150,20 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, 
+      extendBody: true,
       backgroundColor: const Color(0xFFF4F7FC),
       
+      // [SOLUSI #5] Matikan resize agar FAB/Navbar tidak terdorong keyboard
+      resizeToAvoidBottomInset: false, 
+
       body: IndexedStack(
         index: _selectedIndex,
         children: _pages,
       ),
 
-      // --- SCAN---
       floatingActionButton: SizedBox(
-        width: 70, 
-        height: 70,
+        width: 65, 
+        height: 65,
         child: FloatingActionButton(
           onPressed: _onScanPressed,
           elevation: 4,
@@ -149,8 +172,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.qr_code_scanner, size: 30, color: Colors.white),
-              SizedBox(height: 2),
+              Icon(Icons.qr_code_scanner, size: 28, color: Colors.white),
               Text("SCAN", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white))
             ],
           ),
@@ -158,13 +180,12 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // --- NAVIGATION BAR ---
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(), 
-        notchMargin: 10.0, 
+        notchMargin: 8.0, 
         color: Colors.white,
         surfaceTintColor: Colors.white,
-        elevation: 10,
+        elevation: 15,
         height: 70,
         padding: EdgeInsets.zero,
         child: Row(
@@ -172,7 +193,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           children: [
             _buildNavItem(icon: Icons.dashboard_rounded, label: "Home", index: 0),
             _buildNavItem(icon: Icons.inventory_2_rounded, label: "Stok", index: 1),
-            const SizedBox(width: 40),
+            const SizedBox(width: 40), 
             _buildNavItem(icon: Icons.point_of_sale_rounded, label: "Kasir", index: 2),
             _buildNavItem(icon: Icons.person_rounded, label: "Profil", index: 3),
           ],
@@ -181,7 +202,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
-  // Helper Widget Item Menu 
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     final bool isSelected = _selectedIndex == index;
     final Color color = isSelected ? const Color(0xFF2962FF) : Colors.grey.shade400;
@@ -194,13 +214,13 @@ class _MainScaffoldState extends State<MainScaffold> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 26),
+            Icon(icon, color: color, size: isSelected ? 28 : 24),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),
