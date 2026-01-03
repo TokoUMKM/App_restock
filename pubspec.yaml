@@ -2,7 +2,7 @@ name: restock_ai_app
 description: "An AI Assistant Stock."
 publish_to: 'none' 
 
-version: 1.0.0+1
+version: 1.0.0+4
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
@@ -32,7 +32,9 @@ dependencies:
   flutter_local_notifications: ^17.0.0
 
   # --- HARDWARE & FILES ---
-  camera: ^0.11.0
+  # Kunci versi utama
+  camera: 0.10.6
+  
   image_picker: ^1.1.2
   permission_handler: ^11.3.1
   path_provider: ^2.1.3
@@ -42,9 +44,14 @@ dependencies:
   image: ^4.2.0 
   flutter_dotenv: ^6.0.0
   http_parser: ^4.1.2
-  image_cropper: ^5.0.0
+  
+  # Image Cropper v9
+  image_cropper: ^9.1.0
+  
   print_bluetooth_thermal: ^1.1.1
   esc_pos_utils_plus: ^2.0.4
+  
+  # Firebase
   firebase_core: ^4.3.0
   firebase_messaging: ^16.1.0
 
@@ -57,11 +64,17 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.0
 
+dependency_overrides:
+  # Tetap pertahankan ini untuk kestabilan Supabase Auth
+  app_links: 6.3.2
+
 flutter:
   uses-material-design: true
 
   assets:
     - .env
+    # - assets/icon.png
+    # - assets/splash.png
 
 flutter_launcher_icons:
   android: "ic_launcher"

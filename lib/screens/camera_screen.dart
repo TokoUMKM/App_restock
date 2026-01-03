@@ -4,16 +4,17 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// IMPORT SERVICE & MODEL
+// Service & Model
 import '../services/camera_service.dart';
 import '../services/ai_services.dart'; 
 import '../services/supabase_services.dart';
 import '../models/product.dart';
 import 'preview_screen.dart'; 
 
-// --- PROVIDERS ---
+// Providers
 final cameraServiceProvider = Provider((ref) => CameraService());
 final aiServiceProvider = Provider((ref) => AIService());
+final supabaseServiceProviders = Provider((ref) => SupabaseService()); 
 
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
@@ -26,7 +27,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
   CameraController? _controller;
   bool _isCameraInitialized = false;
   bool _isAnalyzing = false;
-  bool _isFlashOn = false;
+  
+  // State Flash
+  FlashMode _currentFlashMode = FlashMode.off;
 
   @override
   void initState() {
@@ -38,18 +41,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _controller?.dispose();
+    ref.read(cameraServiceProvider).dispose(); // Pakai service dispose
     super.dispose();
   }
 
-  // Handle siklus hidup aplikasi 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _controller;
-    if (cameraController == null || !cameraController.value.isInitialized) return;
-
     if (state == AppLifecycleState.inactive) {
-      cameraController.dispose();
+      ref.read(cameraServiceProvider).dispose();
     } else if (state == AppLifecycleState.resumed) {
       _initCamera();
     }
@@ -57,17 +56,21 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
 
   Future<void> _initCamera() async {
     final cameraService = ref.read(cameraServiceProvider);
+    
+    // 1. Cek Permission
     final hasPermission = await cameraService.requestPermissions();
     if (!hasPermission) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Izin kamera ditolak. Silakan aktifkan di pengaturan.")),
+        const SnackBar(content: Text("Izin kamera ditolak.")),
       );
+      Navigator.pop(context);
       return;
     }
 
+    // 2. Init
     final controller = await cameraService.initializeCamera();
-    if (controller != null) {
+    if (controller != null && mounted) {
       setState(() {
         _controller = controller;
         _isCameraInitialized = true;
@@ -75,32 +78,40 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
     }
   }
 
+  // --- LOGIC FLASH ---
+  void _toggleFlash() {
+    FlashMode nextMode;
+    if (_currentFlashMode == FlashMode.off) {
+      nextMode = FlashMode.torch; // Senter
+    } else if (_currentFlashMode == FlashMode.torch) {
+      nextMode = FlashMode.auto;
+    } else {
+      nextMode = FlashMode.off;
+    }
+
+    ref.read(cameraServiceProvider).setFlashMode(nextMode);
+    setState(() => _currentFlashMode = nextMode);
+  }
+
+  // --- LOGIC FLOW ---
   Future<void> _processFlow() async {
-    if (_controller == null || !_controller!.value.isInitialized || _isAnalyzing) return;
+    if (_isAnalyzing) return; 
 
     try {
-      // 1. Mati flash capture jika nyala
-      if (_isFlashOn) {
-        await _controller!.setFlashMode(FlashMode.off);
-      }
-
-      // 2. CAPTURE PHOTO
+      // 1. Capture
       final File? rawFile = await ref.read(cameraServiceProvider).capturePhoto();
       if (rawFile == null) return;
-
       if (!mounted) return;
 
-      // 3. NAVIGASI KE PREVIEW SCREEN
+      // 2. Navigasi ke Preview (Opsional - Jika ingin langsung crop, hapus blok ini)
+      // Pastikan PreviewScreen mengembalikan true jika user setuju
       final bool? proceed = await Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (_) => PreviewScreen(imagePath: rawFile.path)),
       );
-      if (proceed != true || !mounted) {
-        if (_isFlashOn) await _controller!.setFlashMode(FlashMode.torch);
-        return;
-      }
+      if (proceed != true) return; 
 
-      // 4. CROP IMAGE
+      // 3. Crop
       setState(() => _isAnalyzing = true);
       final File? croppedFile = await ref.read(cameraServiceProvider).cropImage(rawFile);
       
@@ -109,22 +120,22 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
         return;
       }
 
-      // 5. ANALISA AI
+      // 4. AI Analyze
       final result = await ref.read(aiServiceProvider).analyzeReceipt(croppedFile);
 
       if (!mounted) return;
 
       if (result.success && result.data != null) {
-        // Tampilkan Bottom Sheet Review
         showModalBottomSheet(
           context: context,
-          isScrollControlled: true, // Penting agar bisa full height
+          isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (_) => ReceiptReviewSheet(data: result.data!, imageFile: croppedFile),
         );
       } else {
-        throw result.error ?? "AI gagal membaca struk. Pastikan tulisan jelas.";
+        throw result.error ?? "AI gagal membaca struk.";
       }
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Gagal: $e"), backgroundColor: Colors.red),
@@ -147,50 +158,56 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
       backgroundColor: Colors.black,
       body: Stack(
         children: [
+          // 1. Kamera
           SizedBox.expand(child: CameraPreview(_controller!)),
+          
+          // 2. Overlay Hitam Transparan
           _buildScannerOverlay(),
-          Positioned(
-            top: 50, left: 20, right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.black45,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-                CircleAvatar(
-                  backgroundColor: Colors.black45,
-                  child: IconButton(
-                    icon: Icon(
-                      _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                      color: _isFlashOn ? Colors.yellow : Colors.white,
+
+          // 3. Header Buttons
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    onPressed: () {
-                      setState(() => _isFlashOn = !_isFlashOn);
-                      _controller!.setFlashMode(_isFlashOn ? FlashMode.torch : FlashMode.off);
-                    },
                   ),
-                ),
-              ],
+                  CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      icon: Icon(
+                        _currentFlashMode == FlashMode.off 
+                           ? Icons.flash_off 
+                           : (_currentFlashMode == FlashMode.torch ? Icons.flash_on : Icons.flash_auto),
+                        color: _currentFlashMode == FlashMode.off ? Colors.white : Colors.yellow,
+                      ),
+                      onPressed: _toggleFlash,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
-          // Teks Instruksi
+          // 4. Text Instruksi
           Positioned(
             top: MediaQuery.of(context).size.height * 0.2,
             left: 0, right: 0,
             child: const Center(
               child: Text(
-                "Posisikan struk belanja di dalam kotak",
+                "Posisikan struk di dalam kotak",
                 style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ),
           ),
 
-          // Tombol Shutter
+          // 5. Tombol Shutter
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -202,6 +219,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 4),
+                    color: Colors.white24,
                   ),
                   child: Center(
                     child: Container(
@@ -214,7 +232,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
             ),
           ),
 
-          // Loading AI Overlay
+          // 6. Loading
           if (_isAnalyzing) _buildLoadingOverlay(),
         ],
       ),
@@ -230,7 +248,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
           Align(
             alignment: Alignment.center,
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.8,
+              width: MediaQuery.of(context).size.width * 0.85,
               height: MediaQuery.of(context).size.height * 0.55,
               decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(24)),
             ),
@@ -259,7 +277,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with WidgetsBinding
   }
 }
 
-// SHEET REVIEW HASIL SCAN
+// =============================================================================
+// SHEET REVIEW HASIL SCAN (Logic Database)
+// =============================================================================
 
 class ReceiptReviewSheet extends ConsumerStatefulWidget {
   final ReceiptData data;
@@ -293,7 +313,6 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
     super.dispose();
   }
 
-  // Edit Item Dialog
   void _editItem(int index) {
     final item = _editableItems[index];
     final nameCtrl = TextEditingController(text: item.name);
@@ -392,8 +411,8 @@ class _ReceiptReviewSheetState extends ConsumerState<ReceiptReviewSheet> {
       }
 
       if (!mounted) return;
-      Navigator.pop(context); 
-      Navigator.pop(context); 
+      Navigator.pop(context); // Tutup Sheet
+      Navigator.pop(context); // Tutup Camera Screen
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

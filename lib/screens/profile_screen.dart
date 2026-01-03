@@ -38,12 +38,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final meta = user.userMetadata ?? {};
-      setState(() {
-        _fullName = meta['full_name'] ?? "User Toko";
-        _shopName = meta['shop_name'] ?? "Toko Saya";
-        _phone = meta['shop_phone'] ?? "";       
-        _address = meta['shop_address'] ?? "";   
-      });
+      if (mounted) {
+        setState(() {
+          _fullName = meta['full_name'] ?? "User Toko";
+          _shopName = meta['shop_name'] ?? "Toko Saya";
+          _phone = meta['shop_phone'] ?? "";       
+          _address = meta['shop_address'] ?? "";   
+        });
+      }
     }
   }
 
@@ -57,12 +59,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         backgroundColor: isError ? Colors.red : const Color(0xFF2962FF),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20), // Agar tidak ketutup BottomNav
+        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
       ),
     );
   }
 
-  // --- 2. EDIT PROFIL ---
+  // --- 2. EDIT PROFIL (Modal Bottom Sheet) ---
   void _showEditProfileDialog() {
     final nameCtrl = TextEditingController(text: _fullName);
     final shopCtrl = TextEditingController(text: _shopName);
@@ -71,7 +73,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, 
+      isScrollControlled: true, // PENTING agar bisa full screen saat keyboard muncul
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -209,7 +211,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // --- 5. HAPUS AKUN (CRITICAL FIX) ---
+  // --- 5. HAPUS AKUN (FIX KEYBOARD OVERFLOW) ---
   void _confirmDeleteAccount() {
     final confirmCtrl = TextEditingController();
     showDialog(
@@ -217,6 +219,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("HAPUS AKUN", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        scrollable: true, // [SOLUSI] Agar dialog bisa discroll saat keyboard muncul
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -229,6 +232,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 hintText: "Ketik HAPUS",
                 isDense: true,
               ),
+              textInputAction: TextInputAction.done, // Tombol keyboard 'Done'
             )
           ],
         ),
@@ -238,16 +242,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () async {
               if (confirmCtrl.text == "HAPUS") {
                 Navigator.pop(ctx);
-                setState(() => _isLoading = true); // Tampilkan loading fullscreen
+                setState(() => _isLoading = true); 
 
                 try {
-                   // [FIX: WAJIB PANGGIL RPC UNTUK HAPUS DATA DI DB]
+                   // RPC Call untuk hapus data
                    await Supabase.instance.client.rpc('delete_user_account');
 
-                   // Logout setelah data bersih
+                   // Logout
                    await Supabase.instance.client.auth.signOut();
                    
-                   // Reset Riverpod
                    ref.invalidate(productListProvider);
                    ref.invalidate(cartProvider);
 
